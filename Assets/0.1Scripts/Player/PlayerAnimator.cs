@@ -1,34 +1,42 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Animator))]
 public class PlayerAnimator : MonoBehaviour
 {
-    [Header("Animations")]
-    [HideInInspector]
+    private Animator animator;
+
     public int animMoveSpeed;
     public int animJump;
     public int animGrounded;
     public int animAttack;
-    public int animShoot;
 
-    public Animator animator;
     private void Awake()
     {
         animator = GetComponent<Animator>();
-        SetUpAnimator();
+
+        animMoveSpeed = Animator.StringToHash("MoveSpeed");
+        animJump = Animator.StringToHash("Jump");
+        animGrounded = Animator.StringToHash("Grounded");
+        animAttack = Animator.StringToHash("Attack");
     }
 
-
-    void Update()
+    public void SetMoveSpeed(float value)
     {
-      
+        animator.SetFloat(animMoveSpeed, value);
     }
 
-    private void SetUpAnimator()
+    public void SetGrounded(bool value)
     {
-        animMoveSpeed = UnityEngine.Animator.StringToHash("MoveSpeed");
-        animJump = UnityEngine.Animator.StringToHash("Jump");
-        animGrounded = UnityEngine.Animator.StringToHash("Grounded");
-        animAttack = UnityEngine.Animator.StringToHash("Attack");
-        animShoot = UnityEngine.Animator.StringToHash("Shoot");
+        animator.SetBool(animGrounded, value);
+    }
+
+    public void TriggerJump()
+    {
+        animator.SetTrigger(animJump);
+    }
+
+    public void TriggerAttack()
+    {
+        animator.SetTrigger(animAttack);
     }
 }

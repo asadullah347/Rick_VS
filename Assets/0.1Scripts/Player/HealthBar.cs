@@ -1,27 +1,21 @@
-using TMPro.EditorUtilities;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.WSA;
 
 public class HealthBar : MonoBehaviour
 {
-    [SerializeField] private Image _healthBarImage;
-    [SerializeField] private float reduceSpeed = 2;
-    private float _target = 1;
-    private Camera _cam;
+    [SerializeField] private Image healthBarImage;
 
-    void Start()
+    private float maxHealth = 1f;
+
+    public void SetMaxHealth(float value)
     {
-        _cam = Camera.main;
+        maxHealth = value;
+        healthBarImage.fillAmount = 1f;
     }
 
-    void Update()
+    public void SetHealth(float currentHealth)
     {
-        _healthBarImage.fillAmount = Mathf.MoveTowards(_healthBarImage.fillAmount, _target, reduceSpeed * Time.deltaTime);
-    }
-
-    public void UpdateHealthBar(float maxHealth, float currHealth)
-    {
-        _target = currHealth / maxHealth;
+        float fill = currentHealth / maxHealth;
+        healthBarImage.fillAmount = fill;
     }
 }

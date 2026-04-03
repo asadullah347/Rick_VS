@@ -1,128 +1,100 @@
-using Unity.Mathematics;
 using UnityEngine;
 
+[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(PlayerAnimator))]
+[RequireComponent(typeof(PlayerInput))]
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private PlayerAnimator playerAnimator;     
-    [SerializeField] private Enemy enemy;     
-    
-    [Header("References")]
     [SerializeField] private Transform cam;
+
+    [Header("Movement")]
+    [SerializeField] private float walkSpeed = 5f;
+    [SerializeField] private float sprintSpeed = 10f;
+    [SerializeField] private float speedChangeRate = 5f;
+    [SerializeField] private float turnSpeed = 8f;
+    [SerializeField] private float gravity = 9.81f;
+    [SerializeField] private float jumpHeight = 1.2f;
+
     private CharacterController controller;
-
-
-    [Header("Movement Setting")]
-    [SerializeField] float walkSpeed = 5f;
-    [SerializeField] float sprintSpeed = 10f;
-    [SerializeField] float sprintTransitSpeed = 5f; //Declare how fast speed will change from walk to sprint
-    [SerializeField] float turingSpeed = 2f;
-    [SerializeField] float gravity = 9.81f;
-    [SerializeField] float jumpheight = 1.1f;
+    private PlayerAnimator animator;
+    private PlayerInput input;
 
     private float verticalVelocity;
     private float speed;
 
-    [Header("inputs")]
-    private float moveInput;
-    private float turnInput;
-
     private void Awake()
     {
-        playerAnimator = GetComponent<PlayerAnimator>();
-        enemy = GetComponent<Enemy>();
+        controller = GetComponent<CharacterController>();
+        animator = GetComponent<PlayerAnimator>();
+        input = GetComponent<PlayerInput>();
     }
 
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        controller = GetComponent<CharacterController>();
-        
+
+        if (cam == null && Camera.main != null)
+            cam = Camera.main.transform;
     }
 
     private void Update()
     {
-        InputManager();
-        Movement();
-        HandleCombatInput();
-    }
-    private void Movement()
-    {
-        GroundMovement();
-        Turn();
-    }
-    private void InputManager()
-    {
-        moveInput = Input.GetAxis("Vertical");
-        turnInput = Input.GetAxis("Horizontal");
+        Move();
     }
 
-    private void GroundMovement()
+    private void Move()
     {
-        Vector3 move = new Vector3 (turnInput,0, moveInput);
+        float targetSpeed = input.SprintHeld ? sprintSpeed : walkSpeed;
+        speed = Mathf.MoveTowards(speed, targetSpeed, speedChangeRate * Time.deltaTime);
+
+        Vector3 move = new Vector3(input.Turn, 0f, input.Move);
         move = transform.TransformDirection(move);
-
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            speed = Mathf.Lerp(speed, sprintSpeed, sprintTransitSpeed * Time.deltaTime);
-        }
-        else
-        {
-            speed = Mathf.Lerp(speed, walkSpeed, sprintTransitSpeed * Time.deltaTime);
-        }
-
         move *= speed;
-        move.y = VerticalForceCalculation();
+
+        move.y = HandleGravity();
         controller.Move(move * Time.deltaTime);
 
-        //Animatons
-        playerAnimator.animator.SetFloat(playerAnimator.animMoveSpeed, speed * Mathf.Max(Mathf.Abs(moveInput), Mathf.Abs(turnInput)));
+        float animSpeed = speed * Mathf.Max(Mathf.Abs(input.Move), Mathf.Abs(input.Turn));
+        animator.SetMoveSpeed(animSpeed);
+
+        HandleRotation();
     }
 
-    private void Turn()
+    private void HandleRotation()
     {
-        if(Mathf.Abs(turnInput) > 0 || Mathf.Abs(moveInput) > 0)
-        {
-            Vector3 currLookDir = cam.forward;
-            currLookDir.y = 0;
+        if (cam == null) return;
 
-            Quaternion targetRotation = Quaternion.LookRotation(currLookDir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turingSpeed * Time.deltaTime);
-        }
+        if (Mathf.Abs(input.Move) < 0.1f && Mathf.Abs(input.Turn) < 0.1f)
+            return;
+
+        Vector3 lookDir = cam.forward;
+        lookDir.y = 0;
+
+        if (lookDir.sqrMagnitude < 0.01f) return;
+
+        Quaternion targetRot = Quaternion.LookRotation(lookDir);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.deltaTime);
     }
 
-    private float VerticalForceCalculation()
+    private float HandleGravity()
     {
-        if(controller.isGrounded)
+        if (controller.isGrounded)
         {
-            verticalVelocity = -1;
+            verticalVelocity = -1f;
+            animator.SetGrounded(true);
 
-            playerAnimator.animator.SetBool(playerAnimator.animGrounded, true);
-
-            if (Input.GetButton("Jump"))
+            if (input.JumpPressed)
             {
-                verticalVelocity = Mathf.Sqrt(jumpheight * gravity * 2);
-                playerAnimator.animator.SetTrigger(playerAnimator.animJump);
+                verticalVelocity = Mathf.Sqrt(jumpHeight * 2f * gravity);
+                animator.TriggerJump();
             }
         }
         else
         {
             verticalVelocity -= gravity * Time.deltaTime;
-            playerAnimator.animator.SetBool(playerAnimator.animGrounded, false);
+            animator.SetGrounded(false);
         }
+
         return verticalVelocity;
     }
-
-    private void HandleCombatInput()
-    {
-        if (Input.GetMouseButtonDown(0))  // Punch
-        {
-            playerAnimator.animator.SetTrigger(playerAnimator.animAttack);
-        }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        other.gameObject.GetComponent<Enemy>()?.TakeDamage(1);
-    }
-
 }

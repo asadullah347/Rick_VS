@@ -1,39 +1,35 @@
 using UnityEngine;
 
-public class Enemy : MonoBehaviour
+public class Enemy : MonoBehaviour, IDamageable
 {
+    [SerializeField] private float maxHealth = 10f;
     [SerializeField] private HealthBar healthBar;
 
-     private float maxHealth = 10;
-     [SerializeField] private float currHealth;
+    private float currentHealth;
+
     private void Awake()
     {
-        healthBar = GetComponent<HealthBar>();
+        currentHealth = maxHealth;
+
+        if (healthBar == null)
+            healthBar = GetComponentInChildren<HealthBar>();
     }
 
-    void Start()
+    private void Start()
     {
-        currHealth = maxHealth;
-        healthBar.UpdateHealthBar(maxHealth,currHealth);
-    }
-
-    void Update()
-    {
-
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.CompareTag("Hand_R"))
-        {
-            
-        }
+        healthBar?.SetMaxHealth(maxHealth);
+        healthBar?.SetHealth(currentHealth);
     }
 
     public void TakeDamage(float amount)
     {
-        currHealth -= amount;
-        healthBar.UpdateHealthBar(maxHealth, currHealth);
-        Debug.Log(currHealth);
+        currentHealth -= amount;
+        Debug.Log("Enemy HP: " + currentHealth);
+        healthBar?.SetHealth(currentHealth);
+
+        if (currentHealth <= 0)
+        {
+            Destroy(gameObject);
+        }
     }
 }
