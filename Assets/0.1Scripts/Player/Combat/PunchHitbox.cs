@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,10 +6,12 @@ using UnityEngine;
 public class PunchHitbox : MonoBehaviour
 {
     [SerializeField] private float damage = 1f;
+    [SerializeField] private float knockbackForce = 4f;
+
+    public event Action<Collider> OnSuccessfulHit;
 
     private Collider col;
     private bool isActive;
-
     private HashSet<Collider> hitTargets = new HashSet<Collider>();
 
     private void Awake()
@@ -33,17 +36,17 @@ public class PunchHitbox : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("HIT SOMETHING: " + other.name); 
-
         if (!isActive) return;
-
         if (hitTargets.Contains(other)) return;
 
         if (other.TryGetComponent<IDamageable>(out var dmg))
         {
-            Debug.Log("DAMAGE APPLIED"); 
             hitTargets.Add(other);
-            dmg.TakeDamage(damage);
+
+            Vector3 hitDir = (other.transform.position - transform.position).normalized;
+            dmg.TakeDamage(damage, hitDir, knockbackForce);
+
+            OnSuccessfulHit?.Invoke(other);
         }
     }
 }
