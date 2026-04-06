@@ -15,12 +15,17 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float gravity = 9.81f;
     [SerializeField] private float jumpHeight = 1.2f;
 
+    [Header("Attack Movement")]
+    [SerializeField] private float attackMoveMultiplier = 0.15f; // 0 = no move, 0.15 = very small move
+    [SerializeField] private bool lockRotationDuringAttack = true;
+
     private CharacterController controller;
     private PlayerAnimator animator;
     private PlayerInput input;
 
     private float verticalVelocity;
     private float speed;
+    private bool isAttacking;
 
     private void Awake()
     {
@@ -45,6 +50,10 @@ public class PlayerController : MonoBehaviour
     private void Move()
     {
         float targetSpeed = input.SprintHeld ? sprintSpeed : walkSpeed;
+
+        if (isAttacking)
+            targetSpeed *= attackMoveMultiplier;
+
         speed = Mathf.MoveTowards(speed, targetSpeed, speedChangeRate * Time.deltaTime);
 
         Vector3 move = new Vector3(input.Turn, 0f, input.Move);
@@ -57,7 +66,8 @@ public class PlayerController : MonoBehaviour
         float animSpeed = speed * Mathf.Max(Mathf.Abs(input.Move), Mathf.Abs(input.Turn));
         animator.SetMoveSpeed(animSpeed);
 
-        HandleRotation();
+        if (!isAttacking || !lockRotationDuringAttack)
+            HandleRotation();
     }
 
     private void HandleRotation()
@@ -83,7 +93,7 @@ public class PlayerController : MonoBehaviour
             verticalVelocity = -1f;
             animator.SetGrounded(true);
 
-            if (input.JumpPressed)
+            if (input.JumpPressed && !isAttacking)
             {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * 2f * gravity);
                 animator.TriggerJump();
@@ -96,5 +106,11 @@ public class PlayerController : MonoBehaviour
         }
 
         return verticalVelocity;
+    }
+
+    // Called from PlayerCombat
+    public void SetAttacking(bool value)
+    {
+        isAttacking = value;
     }
 }
