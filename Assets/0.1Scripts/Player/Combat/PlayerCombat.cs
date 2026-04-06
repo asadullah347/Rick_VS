@@ -8,7 +8,7 @@ using UnityEngine;
 public class PlayerCombat : MonoBehaviour
 {
     [SerializeField] private PunchHitbox punchHitbox;
-    [SerializeField] private CameraShake cameraShake;
+    //[SerializeField] private CameraShake cameraShake;
 
     [Header("Audio")]
     [SerializeField] private AudioClip punchSwingClip;
@@ -34,9 +34,6 @@ public class PlayerCombat : MonoBehaviour
 
         if (punchHitbox == null)
             punchHitbox = GetComponentInChildren<PunchHitbox>();
-
-        if (cameraShake == null && Camera.main != null)
-            cameraShake = Camera.main.GetComponentInChildren<CameraShake>();
 
         if (punchHitbox != null)
             punchHitbox.OnSuccessfulHit += HandleSuccessfulHit;
@@ -69,9 +66,6 @@ public class PlayerCombat : MonoBehaviour
     {
         if (punchHitClip != null)
             audioSource.PlayOneShot(punchHitClip);
-
-        if (cameraShake != null)
-            cameraShake.Shake(0.08f, 0.04f);
 
         if (!isHitPauseRunning)
             StartCoroutine(HitPause(hitPauseDuration));
